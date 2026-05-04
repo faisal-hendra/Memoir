@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { CheckIcon, ChevronLeft, PencilIcon } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useEntries } from "@/stores/entries";
+import dayjs from "dayjs";
 
 export default function Editor() {
   const entries = useEntries((state) => state.entries);
@@ -44,7 +45,9 @@ export default function Editor() {
           <Button size="icon">
             <ChevronLeft />
           </Button>
-          <p className="text-muted-foreground">{activeEntry?.date}</p>
+          <p className="text-muted-foreground">
+            {dayjs(activeEntry?.date).format("dddd, DD MMMM YYYY")}
+          </p>
         </div>
         <Button
           size="icon"

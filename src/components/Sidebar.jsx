@@ -3,6 +3,7 @@ import { Button } from "./ui/button";
 import { PlusIcon, TrashIcon } from "lucide-react";
 import { useSelectedEntry } from "@/stores/selected-entry";
 import { useEntries } from "@/stores/entries";
+import dayjs from "dayjs";
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
@@ -17,7 +18,7 @@ export default function Sidebar() {
 
   function handleNewEntry(entriesAfterDeletion) {
     const newId = Date.now();
-    const newDate = Date.now();
+    const newDate = dayjs().format("DD-MM-YYYY");
     const newEntry = {
       id: newId,
       date: newDate,
