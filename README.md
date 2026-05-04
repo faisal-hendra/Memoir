@@ -1,7 +1,30 @@
-# Tauri + React
+# Memoir
 
-This template should help get you started developing with Tauri and React in Vite.
+A simple note-taking and diary application, built for fun as a personal side project. Might expand it to be a fully functional application (markdown, calendar, etc).
 
-## Recommended IDE Setup
+**Still a work in progress.**
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+## Stack
+
+- [Tauri 2](https://tauri.app/) 
+- [React](https://react.dev/) + [Vite](https://vite.dev/)
+- [Tailwind CSS 4](https://tailwindcss.com/) 
+- [shadcn/ui](https://ui.shadcn.com/)
+- [Zustand](https://zustand.docs.pmnd.rs/) 
+
+## Getting Started
+
+```bash
+# Install dependencies
+npm install
+
+# Run in dev mode
+npm run tauri dev
+
+# Build for production
+npm run tauri build
+```
+
+## License
+
+Just a fun project, do whatever you want with it.
