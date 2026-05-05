@@ -5,10 +5,11 @@ import { useSelectedEntry } from "@/stores/selected-entry";
 import { useEntries } from "@/stores/entries";
 import dayjs from "dayjs";
 import { Input } from "./ui/input";
+import { createEmptyEntry } from "@/modules/create-empty-entry";
 
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 500;
-const DEFAULT_WIDTH = 300;
+const DEFAULT_WIDTH = 250;
 
 export default function Sidebar() {
   const [width, setWidth] = useState(DEFAULT_WIDTH);
@@ -21,8 +22,8 @@ export default function Sidebar() {
   const setSelectedEntry = useSelectedEntry((state) => state.setSelectedEntry);
   const [filteredEntries, setFilteredEntries] = useState([]);
 
-  const [isSearchMode, setIsSearchMode] = useState(false);
-  const [searchKeyword, setSearchKeyword] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const startResizing = useCallback((e) => {
     e.preventDefault();
@@ -31,15 +32,15 @@ export default function Sidebar() {
 
   useEffect(() => {
     setFilteredEntries(entries);
-    searchKeyword && handleSearch();
+    searchTerm && handleSearch();
   }, [entries]);
 
   function handleSearch() {
-    const regex = new RegExp(searchKeyword, "i");
+    const regex = new RegExp(searchTerm, "i");
 
-    if (searchKeyword.length > 0) {
+    if (searchTerm.length > 0) {
       setFilteredEntries(
-        entries.filter((e) => regex.test(e.title) || regex.test(e.content)),
+        entries.filter((entry) => regex.test(entry.title) || regex.test(entry.content)),
       );
     } else {
       setFilteredEntries(entries);
@@ -48,7 +49,7 @@ export default function Sidebar() {
 
   useEffect(() => {
     handleSearch();
-  }, [searchKeyword]);
+  }, [searchTerm]);
 
   useEffect(() => {
     if (!isResizing) return;
@@ -72,36 +73,28 @@ export default function Sidebar() {
     };
   }, [isResizing]);
 
-  function handleNewEntry(entriesAfterDeletion) {
+  function addOrSelectNewEntry(entriesAfterDeletion) {
     const currentEntries = entriesAfterDeletion ?? entries;
+    const newEntry = createEmptyEntry();
 
-    const newId = Date.now();
-    const newDate = dayjs().format("YYYY-MM-DD");
-    const newEntry = {
-      id: newId,
-      date: newDate,
-      title: "New Entry",
-      content: "",
-    };
-
-    const existingVacant = currentEntries.find(
-      (e) => e.title === "New Entry" && e.content === "" && e.date === newDate,
+    const existingEmptyEntry = currentEntries.find(
+      (entry) => entry.title === "New Entry" && entry.content === "" && entry.date === newDate,
     );
 
-    if (existingVacant) {
+    if (existingEmptyEntry) {
       setEntries(currentEntries);
-      setSelectedEntry(existingVacant);
+      setSelectedEntry(existingEmptyEntry);
     } else {
       setEntries([newEntry, ...currentEntries]);
       setSelectedEntry(newEntry);
     }
   }
 
-  function handleDelete(idToDelete) {
-    const entriesAfterDeletion = entries.filter((e) => e.id !== idToDelete);
+  function handleDeleteEntry(entryId) {
+    const entriesAfterDeletion = entries.filter((entry) => entry.id !== entryId);
 
-    if (idToDelete === selectedEntry?.id || entriesAfterDeletion.length === 0) {
-      handleNewEntry(entriesAfterDeletion);
+    if (entryId === selectedEntry?.id || entriesAfterDeletion.length === 0) {
+      addOrSelectNewEntry(entriesAfterDeletion);
     } else {
       setEntries(entriesAfterDeletion);
     }
@@ -115,22 +108,23 @@ export default function Sidebar() {
     >
       <div className={`flex items-center font-bold`}></div>
       <div className="flex flex-col mt-2 overflow-y-auto">
-        {!isSearchMode ? (
+        {!isSearchOpen ? (
           <div className="flex justify-center gap-2">
             <Button
               type="button"
               className="mb-2 hover:cursor-pointer flex items-center gap-1 px-4"
               onClick={() => {
-                handleNewEntry();
+                addOrSelectNewEntry();
               }}
             >
               <PlusIcon className="w-4 h-4" />
               New
             </Button>
             <Button
+              variant="outline"
               className="mb-2 hover:cursor-pointer flex items-center gap-1 px-4"
               onClick={() => {
-                setIsSearchMode((val) => !val);
+                setIsSearchOpen((prev) => !prev);
               }}
             >
               <SearchIcon />
@@ -139,8 +133,8 @@ export default function Sidebar() {
         ) : (
           <div className="flex justify-center gap-2">
             <Input
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              value={searchKeyword}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              value={searchTerm}
               className="outline-0"
               placeholder="Search"
             />
@@ -148,8 +142,8 @@ export default function Sidebar() {
               variant="ghost"
               className="mb-2 hover:cursor-pointer flex items-center gap-1 px-4"
               onClick={() => {
-                setIsSearchMode((val) => !val);
-                setSearchKeyword("");
+                setIsSearchOpen((prev) => !prev);
+                setSearchTerm("");
               }}
             >
               <X />
@@ -157,23 +151,23 @@ export default function Sidebar() {
           </div>
         )}
 
-        {filteredEntries?.map((e) => (
+        {filteredEntries?.map((entry) => (
           <button
             type="button"
-            className={`${e.id === selectedEntry?.id ? "bg-sidebar-accent" : "bg-card"} mb-1 p-2 hover:cursor-pointer flex items-center justify-between text-left rounded-md transition-colors group`}
-            key={e.id}
+            className={`${entry.id === selectedEntry?.id ? "bg-sidebar-accent" : "bg-card"} mb-1 p-2 hover:cursor-pointer flex items-center justify-between text-left rounded-md transition-colors group`}
+            key={entry.id}
             onClick={() => {
-              setSelectedEntry(e);
+              setSelectedEntry(entry);
             }}
           >
-            <span className="truncate flex-1 mr-2">{e.title}</span>
+            <span className="truncate flex-1 mr-2">{entry.title}</span>
             <Button
               size="icon"
               variant="ghost"
               className="opacity-0 group-hover:opacity-100 w-5 h-5 shrink-0 transition-opacity"
               onClick={(event) => {
                 event.stopPropagation();
-                handleDelete(e.id);
+                handleDeleteEntry(entry.id);
               }}
             >
               <TrashIcon className="w-3 h-3 text-destructive" />
