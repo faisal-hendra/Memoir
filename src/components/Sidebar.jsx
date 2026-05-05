@@ -88,10 +88,14 @@ export default function Sidebar() {
 
   function handleDelete(idToDelete) {
     const entriesAfterDeletion = entries.filter((e) => e.id !== idToDelete);
-    setEntries(entriesAfterDeletion);
+
+    const isSelectedEmpty =
+      selectedEntry.title === "New Entry" && selectedEntry.content === "";
 
     if (idToDelete === selectedEntry.id || entriesAfterDeletion.length < 0) {
       handleNewEntry(entriesAfterDeletion);
+    } else {
+      setEntries(entriesAfterDeletion);
     }
   }
 
