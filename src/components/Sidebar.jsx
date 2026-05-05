@@ -1,12 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "./ui/button";
 import { PlusIcon, TrashIcon } from "lucide-react";
 import { useSelectedEntry } from "@/stores/selected-entry";
 import { useEntries } from "@/stores/entries";
 import dayjs from "dayjs";
 
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 500;
+const DEFAULT_WIDTH = 300;
+
 export default function Sidebar() {
-  const [isOpen, setIsOpen] = useState(true);
+  const [width, setWidth] = useState(DEFAULT_WIDTH);
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef(null);
+
   const entries = useEntries((state) => state.entries);
   const setEntries = useEntries((state) => state.setEntries);
   const selectedEntry = useSelectedEntry((state) => state.selectedEntry);
@@ -16,9 +23,36 @@ export default function Sidebar() {
     console.log("Selected Entry", selectedEntry);
   }, [selectedEntry]);
 
+  const startResizing = useCallback((e) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e) => {
+      if (!sidebarRef.current) return;
+      const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, e.clientX));
+      setWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing]);
+
   function handleNewEntry(entriesAfterDeletion) {
     const newId = Date.now();
-    const newDate = dayjs().format("DD-MM-YYYY");
+    const newDate = dayjs().format("YYYY-MM-DD");
     const newEntry = {
       id: newId,
       date: newDate,
@@ -46,11 +80,11 @@ export default function Sidebar() {
 
   return (
     <div
-      className={`min-w-25 ${isOpen ? "w-75" : "max-w-20"} h-screen p-2 bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-200`}
+      ref={sidebarRef}
+      style={{ width }}
+      className={`relative h-screen p-2 bg-sidebar border-r border-sidebar-border flex flex-col ${isResizing ? "select-none cursor-col-resize" : ""}`}
     >
-      <div
-        className={`flex ${isOpen ? "justify-end" : "justify-center"} items-center font-bold`}
-      ></div>
+      <div className={`flex items-center font-bold`}></div>
       <div className="flex flex-col mt-2 overflow-y-auto">
         <div className="flex justify-center">
           <Button
@@ -89,6 +123,12 @@ export default function Sidebar() {
           </button>
         ))}
       </div>
+      <button
+        type="button"
+        onMouseDown={startResizing}
+        aria-label="Resize sidebar"
+        className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize hover:bg-primary/30 active:bg-primary/50 transition-colors"
+      />
     </div>
   );
 }
