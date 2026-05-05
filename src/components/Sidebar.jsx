@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "./ui/button";
-import { PlusIcon, TrashIcon } from "lucide-react";
+import { PlusIcon, SearchIcon, TrashIcon, X } from "lucide-react";
 import { useSelectedEntry } from "@/stores/selected-entry";
 import { useEntries } from "@/stores/entries";
 import dayjs from "dayjs";
+import { Input } from "./ui/input";
 
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 500;
@@ -18,15 +19,36 @@ export default function Sidebar() {
   const setEntries = useEntries((state) => state.setEntries);
   const selectedEntry = useSelectedEntry((state) => state.selectedEntry);
   const setSelectedEntry = useSelectedEntry((state) => state.setSelectedEntry);
+  const [filteredEntries, setFilteredEntries] = useState([]);
 
-  useEffect(() => {
-    console.log("Selected Entry", selectedEntry);
-  }, [selectedEntry]);
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState("");
 
   const startResizing = useCallback((e) => {
     e.preventDefault();
     setIsResizing(true);
   }, []);
+
+  useEffect(() => {
+    setFilteredEntries(entries);
+    searchKeyword && handleSearch();
+  }, [entries]);
+
+  function handleSearch() {
+    const regex = new RegExp(searchKeyword, "i");
+
+    if (searchKeyword.length > 0) {
+      setFilteredEntries(
+        entries.filter((e) => regex.test(e.title) || regex.test(e.content)),
+      );
+    } else {
+      setFilteredEntries(entries);
+    }
+  }
+
+  useEffect(() => {
+    handleSearch();
+  }, [searchKeyword]);
 
   useEffect(() => {
     if (!isResizing) return;
@@ -51,6 +73,8 @@ export default function Sidebar() {
   }, [isResizing]);
 
   function handleNewEntry(entriesAfterDeletion) {
+    const currentEntries = entriesAfterDeletion ?? entries;
+
     const newId = Date.now();
     const newDate = dayjs().format("YYYY-MM-DD");
     const newEntry = {
@@ -60,28 +84,15 @@ export default function Sidebar() {
       content: "",
     };
 
-    const TODAYS_DATE = dayjs().format("YYYY-MM-DD");
+    const existingVacant = currentEntries.find(
+      (e) => e.title === "New Entry" && e.content === "" && e.date === newDate,
+    );
 
-    const vacantEntry =
-      entries.filter(
-        (e) =>
-          e.title === "New Entry" && e.content === "" && e.date === TODAYS_DATE,
-      ) ||
-      entriesAfterDeletion?.filter(
-        (e) =>
-          e.title === "New Entry" && e.content === "" && e.date === TODAYS_DATE,
-      );
-
-    console.log("Is Vacant Available", vacantEntry);
-
-    if (vacantEntry.length > 0) {
-      setSelectedEntry(vacantEntry[0]);
+    if (existingVacant) {
+      setEntries(currentEntries);
+      setSelectedEntry(existingVacant);
     } else {
-      if (entriesAfterDeletion) {
-        setEntries([newEntry, ...entriesAfterDeletion]);
-      } else {
-        setEntries([newEntry, ...entries]);
-      }
+      setEntries([newEntry, ...currentEntries]);
       setSelectedEntry(newEntry);
     }
   }
@@ -89,10 +100,7 @@ export default function Sidebar() {
   function handleDelete(idToDelete) {
     const entriesAfterDeletion = entries.filter((e) => e.id !== idToDelete);
 
-    const isSelectedEmpty =
-      selectedEntry.title === "New Entry" && selectedEntry.content === "";
-
-    if (idToDelete === selectedEntry.id || entriesAfterDeletion.length < 0) {
+    if (idToDelete === selectedEntry?.id || entriesAfterDeletion.length === 0) {
       handleNewEntry(entriesAfterDeletion);
     } else {
       setEntries(entriesAfterDeletion);
@@ -107,20 +115,49 @@ export default function Sidebar() {
     >
       <div className={`flex items-center font-bold`}></div>
       <div className="flex flex-col mt-2 overflow-y-auto">
-        <div className="flex justify-center">
-          <Button
-            type="button"
-            className="mb-2 hover:cursor-pointer flex items-center gap-1 px-4"
-            onClick={() => {
-              handleNewEntry();
-            }}
-          >
-            <PlusIcon className="w-4 h-4" />
-            New
-          </Button>
-        </div>
+        {!isSearchMode ? (
+          <div className="flex justify-center gap-2">
+            <Button
+              type="button"
+              className="mb-2 hover:cursor-pointer flex items-center gap-1 px-4"
+              onClick={() => {
+                handleNewEntry();
+              }}
+            >
+              <PlusIcon className="w-4 h-4" />
+              New
+            </Button>
+            <Button
+              className="mb-2 hover:cursor-pointer flex items-center gap-1 px-4"
+              onClick={() => {
+                setIsSearchMode((val) => !val);
+              }}
+            >
+              <SearchIcon />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex justify-center gap-2">
+            <Input
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              value={searchKeyword}
+              className="outline-0"
+              placeholder="Search"
+            />
+            <Button
+              variant="ghost"
+              className="mb-2 hover:cursor-pointer flex items-center gap-1 px-4"
+              onClick={() => {
+                setIsSearchMode((val) => !val);
+                setSearchKeyword("");
+              }}
+            >
+              <X />
+            </Button>
+          </div>
+        )}
 
-        {entries?.map((e) => (
+        {filteredEntries?.map((e) => (
           <button
             type="button"
             className={`${e.id === selectedEntry?.id ? "bg-sidebar-accent" : "bg-card"} mb-1 p-2 hover:cursor-pointer flex items-center justify-between text-left rounded-md transition-colors group`}
@@ -148,7 +185,7 @@ export default function Sidebar() {
         type="button"
         onMouseDown={startResizing}
         aria-label="Resize sidebar"
-        className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize hover:bg-primary/30 active:bg-primary/50 transition-colors"
+        className="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-primary/10 active:bg-primary/30 transition-colors"
       />
     </div>
   );
