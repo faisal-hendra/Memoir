@@ -60,21 +60,38 @@ export default function Sidebar() {
       content: "",
     };
 
-    if (entriesAfterDeletion) {
-      setEntries([newEntry, ...entriesAfterDeletion]);
-    } else {
-      setEntries([newEntry, ...entries]);
-    }
+    const TODAYS_DATE = dayjs().format("YYYY-MM-DD");
 
-    setSelectedEntry(newEntry);
+    const vacantEntry =
+      entries.filter(
+        (e) =>
+          e.title === "New Entry" && e.content === "" && e.date === TODAYS_DATE,
+      ) ||
+      entriesAfterDeletion?.filter(
+        (e) =>
+          e.title === "New Entry" && e.content === "" && e.date === TODAYS_DATE,
+      );
+
+    console.log("Is Vacant Available", vacantEntry);
+
+    if (vacantEntry.length > 0) {
+      setSelectedEntry(vacantEntry[0]);
+    } else {
+      if (entriesAfterDeletion) {
+        setEntries([newEntry, ...entriesAfterDeletion]);
+      } else {
+        setEntries([newEntry, ...entries]);
+      }
+      setSelectedEntry(newEntry);
+    }
   }
 
   function handleDelete(idToDelete) {
-    const entriesAfterDelete = entries.filter((e) => e.id !== idToDelete);
-    setEntries(entriesAfterDelete);
+    const entriesAfterDeletion = entries.filter((e) => e.id !== idToDelete);
+    setEntries(entriesAfterDeletion);
 
-    if (idToDelete === selectedEntry.id || entriesAfterDelete.length < 0) {
-      handleNewEntry(entriesAfterDelete);
+    if (idToDelete === selectedEntry.id || entriesAfterDeletion.length < 0) {
+      handleNewEntry(entriesAfterDeletion);
     }
   }
 
