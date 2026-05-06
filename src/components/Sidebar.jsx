@@ -36,11 +36,16 @@ export default function Sidebar() {
   }, [entries]);
 
   function handleSearch() {
-    const regex = new RegExp(searchTerm, "i");
+    const regex = new RegExp(
+      searchTerm.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&"),
+      "i",
+    );
 
     if (searchTerm.length > 0) {
       setFilteredEntries(
-        entries.filter((entry) => regex.test(entry.title) || regex.test(entry.content)),
+        entries.filter(
+          (entry) => regex.test(entry.title) || regex.test(entry.content),
+        ),
       );
     } else {
       setFilteredEntries(entries);
@@ -78,7 +83,10 @@ export default function Sidebar() {
     const newEntry = createEmptyEntry();
 
     const existingEmptyEntry = currentEntries.find(
-      (entry) => entry.title === "New Entry" && entry.content === "" && entry.date === newDate,
+      (entry) =>
+        entry.title === "New Entry" &&
+        entry.content === "" &&
+        entry.date === newDate,
     );
 
     if (existingEmptyEntry) {
@@ -91,7 +99,9 @@ export default function Sidebar() {
   }
 
   function handleDeleteEntry(entryId) {
-    const entriesAfterDeletion = entries.filter((entry) => entry.id !== entryId);
+    const entriesAfterDeletion = entries.filter(
+      (entry) => entry.id !== entryId,
+    );
 
     if (entryId === selectedEntry?.id || entriesAfterDeletion.length === 0) {
       addOrSelectNewEntry(entriesAfterDeletion);
