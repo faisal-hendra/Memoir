@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { ENTRIES } from "./mock-data";
 import { useSelectedEntry } from "./stores/selected-entry";
 import { createEmptyEntry } from "./modules/create-empty-entry";
+import { ThemeProvider } from "./components/ThemeProvider";
 
 function App() {
   const setEntries = useEntries((state) => state.setEntries);
@@ -13,9 +14,7 @@ function App() {
 
   useEffect(() => {
     setEntries(ENTRIES);
-    ENTRIES.length > 0
-      ? selectFirstEntry()
-      : createAndSelectNewEntry();
+    ENTRIES.length > 0 ? selectFirstEntry() : createAndSelectNewEntry();
   }, []);
 
   function createAndSelectNewEntry() {
@@ -29,10 +28,12 @@ function App() {
   }
 
   return (
-    <main className="flex w-screen h-screen overflow-hidden">
-      <Sidebar />
-      <Editor />
-    </main>
+    <ThemeProvider>
+      <main className="flex w-screen h-screen overflow-hidden">
+        <Sidebar />
+        <Editor />
+      </main>
+    </ThemeProvider>
   );
 }
 

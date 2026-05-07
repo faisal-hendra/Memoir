@@ -3,15 +3,20 @@ import { Button } from "./ui/button";
 import { PlusIcon, SearchIcon, TrashIcon, X } from "lucide-react";
 import { useSelectedEntry } from "@/stores/selected-entry";
 import { useEntries } from "@/stores/entries";
-import dayjs from "dayjs";
 import { Input } from "./ui/input";
 import { createEmptyEntry } from "@/modules/create-empty-entry";
+import { useTheme } from "next-themes";
+import { Sun, Moon } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { ThemeSwitch } from "./ui/theme-switch";
 
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 500;
 const DEFAULT_WIDTH = 250;
 
 export default function Sidebar() {
+  const { theme, setTheme } = useTheme();
+
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef(null);
@@ -184,6 +189,11 @@ export default function Sidebar() {
             </Button>
           </button>
         ))}
+      </div>
+      <div className="absolute bottom-2 left-2 opacity-10 hover:opacity-100 transition-all">
+        <ThemeSwitch
+          onCheckedChange={() => setTheme(theme === "dark" ? "light" : "dark")}
+        ></ThemeSwitch>
       </div>
       <button
         type="button"
