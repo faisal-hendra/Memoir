@@ -193,6 +193,7 @@ export default function Sidebar() {
       <div className="absolute bottom-2 left-2 opacity-10 hover:opacity-100 transition-all">
         <ThemeSwitch
           onCheckedChange={() => setTheme(theme === "dark" ? "light" : "dark")}
+          checked={theme === "light"}
         ></ThemeSwitch>
       </div>
       <button
