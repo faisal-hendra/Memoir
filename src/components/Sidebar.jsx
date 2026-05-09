@@ -33,6 +33,7 @@ export default function Sidebar({ createAndSelectNewEntry }) {
     setIsResizing(true);
   }, []);
 
+  // Finds an empty "Untitled" entry that can be reused
   function findVacant() {
     const availableEmptyEntry = entries.find(
       (e) => e.title === "Untitled" && e.content.trim() === "",
@@ -49,6 +50,7 @@ export default function Sidebar({ createAndSelectNewEntry }) {
   }
 
   function handleSearch() {
+    // Escape special regex characters in searchTerm to escape errors
     const regex = new RegExp(
       searchTerm.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&"),
       "i",
@@ -92,29 +94,35 @@ export default function Sidebar({ createAndSelectNewEntry }) {
   }, [isResizing]);
 
   async function handleDeleteEntry(entryId) {
-    try {
-      const db = await Database.load("sqlite:memoir.db");
-      await db.execute("DELETE FROM entries WHERE id = ?", [entryId]);
-    } catch (error) {
-      console.error("ERROR DELETING AN ENTRY", error);
-      throw error;
-    } finally {
-      setEntries((prevEntries) => {
-        const entriesAfterDeletion = prevEntries.filter(
-          (entry) => entry.id !== entryId,
-        );
-        console.log(entriesAfterDeletion);
-        if (
-          entryId === selectedEntry?.id ||
-          entriesAfterDeletion.length === 0
-        ) {
-          findVacant()
-            ? setSelectedEntry(findVacant())
-            : createAndSelectNewEntry();
-        }
-        console.log("handleDeleteEntry() Executed!");
-        return entriesAfterDeletion;
-      });
+    const vacantEntry = findVacant();
+    // Prevents deleting if the entry being deleted is the vacant entry AND it's currently selected
+    if (selectedEntry.id === vacantEntry?.id && entryId === vacantEntry?.id) {
+      return null;
+    } else {
+      try {
+        const db = await Database.load("sqlite:memoir.db");
+        await db.execute("DELETE FROM entries WHERE id = ?", [entryId]);
+      } catch (error) {
+        console.error("ERROR DELETING AN ENTRY", error);
+        throw error;
+      } finally {
+        setEntries((prevEntries) => {
+          const entriesAfterDeletion = prevEntries.filter(
+            (entry) => entry.id !== entryId,
+          );
+          console.log(entriesAfterDeletion);
+          if (
+            entryId === selectedEntry?.id ||
+            entriesAfterDeletion.length === 0
+          ) {
+            findVacant()
+              ? setSelectedEntry(findVacant())
+              : createAndSelectNewEntry();
+          }
+          console.log("handleDeleteEntry() Executed!");
+          return entriesAfterDeletion;
+        });
+      }
     }
   }
 

@@ -55,6 +55,7 @@ export default function Editor() {
 
   useEffect(() => {
     setEditableEntry(selectedEntry);
+    setIsEditing(false);
   }, [selectedEntry]);
 
   useEffect(() => {
