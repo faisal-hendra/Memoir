@@ -4,17 +4,15 @@ import { PlusIcon, SearchIcon, TrashIcon, X } from "lucide-react";
 import { useSelectedEntry } from "@/stores/selected-entry";
 import { useEntries } from "@/stores/entries";
 import { Input } from "./ui/input";
-import { createEmptyEntry } from "@/modules/create-empty-entry";
 import { useTheme } from "next-themes";
-import { Sun, Moon } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
 import { ThemeSwitch } from "./ui/theme-switch";
+import Database from "@tauri-apps/plugin-sql";
 
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 500;
 const DEFAULT_WIDTH = 250;
 
-export default function Sidebar() {
+export default function Sidebar({ createAndSelectNewEntry }) {
   const { theme, setTheme } = useTheme();
 
   const [width, setWidth] = useState(DEFAULT_WIDTH);
@@ -35,17 +33,26 @@ export default function Sidebar() {
     setIsResizing(true);
   }, []);
 
-  useEffect(() => {
-    setFilteredEntries(entries);
-    searchTerm && handleSearch();
-  }, [entries]);
+  function findVacant() {
+    const availableEmptyEntry = entries.find(
+      (e) => e.title === "Untitled" && e.content.trim() === "",
+    );
+    return availableEmptyEntry;
+  }
+
+  function handleNewEntry() {
+    if (findVacant()) {
+      setSelectedEntry(findVacant());
+    } else {
+      createAndSelectNewEntry();
+    }
+  }
 
   function handleSearch() {
     const regex = new RegExp(
       searchTerm.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&"),
       "i",
     );
-
     if (searchTerm.length > 0) {
       setFilteredEntries(
         entries.filter(
@@ -58,60 +65,56 @@ export default function Sidebar() {
   }
 
   useEffect(() => {
+    setFilteredEntries(entries);
+    searchTerm && handleSearch();
+  }, [entries]);
+
+  useEffect(() => {
     handleSearch();
   }, [searchTerm]);
 
   useEffect(() => {
     if (!isResizing) return;
-
     const handleMouseMove = (e) => {
       if (!sidebarRef.current) return;
       const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, e.clientX));
       setWidth(newWidth);
     };
-
     const handleMouseUp = () => {
       setIsResizing(false);
     };
-
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
-
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isResizing]);
 
-  function addOrSelectNewEntry(entriesAfterDeletion) {
-    const currentEntries = entriesAfterDeletion ?? entries;
-    const newEntry = createEmptyEntry();
-
-    const existingEmptyEntry = currentEntries.find(
-      (entry) =>
-        entry.title === "New Entry" &&
-        entry.content === "" &&
-        entry.date === newDate,
-    );
-
-    if (existingEmptyEntry) {
-      setEntries(currentEntries);
-      setSelectedEntry(existingEmptyEntry);
-    } else {
-      setEntries([newEntry, ...currentEntries]);
-      setSelectedEntry(newEntry);
-    }
-  }
-
-  function handleDeleteEntry(entryId) {
-    const entriesAfterDeletion = entries.filter(
-      (entry) => entry.id !== entryId,
-    );
-
-    if (entryId === selectedEntry?.id || entriesAfterDeletion.length === 0) {
-      addOrSelectNewEntry(entriesAfterDeletion);
-    } else {
-      setEntries(entriesAfterDeletion);
+  async function handleDeleteEntry(entryId) {
+    try {
+      const db = await Database.load("sqlite:memoir.db");
+      await db.execute("DELETE FROM entries WHERE id = ?", [entryId]);
+    } catch (error) {
+      console.error("ERROR DELETING AN ENTRY", error);
+      throw error;
+    } finally {
+      setEntries((prevEntries) => {
+        const entriesAfterDeletion = prevEntries.filter(
+          (entry) => entry.id !== entryId,
+        );
+        console.log(entriesAfterDeletion);
+        if (
+          entryId === selectedEntry?.id ||
+          entriesAfterDeletion.length === 0
+        ) {
+          findVacant()
+            ? setSelectedEntry(findVacant())
+            : createAndSelectNewEntry();
+        }
+        console.log("handleDeleteEntry() Executed!");
+        return entriesAfterDeletion;
+      });
     }
   }
 
@@ -129,7 +132,7 @@ export default function Sidebar() {
               type="button"
               className="mb-2 hover:cursor-pointer flex items-center gap-1 px-4"
               onClick={() => {
-                addOrSelectNewEntry();
+                handleNewEntry();
               }}
             >
               <PlusIcon className="w-4 h-4" />
@@ -202,6 +205,11 @@ export default function Sidebar() {
         aria-label="Resize sidebar"
         className="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-primary/10 active:bg-primary/30 transition-colors"
       />
+      {isSearchOpen && filteredEntries.length === 0 && (
+        <div className="text-center pt-2 text-muted-foreground">
+          <p>No result found</p>
+        </div>
+      )}
     </div>
   );
 }

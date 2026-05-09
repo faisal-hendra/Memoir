@@ -6,7 +6,7 @@ export function createEmptyEntry() {
   const newEntry = {
     id: newId,
     date: newDate,
-    title: "New Entry",
+    title: "Untitled",
     content: "",
   };
   return newEntry;

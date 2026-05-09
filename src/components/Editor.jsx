@@ -5,9 +5,9 @@ import { CheckIcon, ChevronLeft, PencilIcon } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useEntries } from "@/stores/entries";
 import dayjs from "dayjs";
+import Database from "@tauri-apps/plugin-sql";
 
 export default function Editor() {
-  const entries = useEntries((state) => state.entries);
   const selectedEntry = useSelectedEntry((state) => state.selectedEntry);
   const setEntries = useEntries((state) => state.setEntries);
 
@@ -15,6 +15,43 @@ export default function Editor() {
   const [isEditing, setIsEditing] = useState(false);
 
   const textareaRef = useRef(null);
+
+  async function updateDatabase() {
+    try {
+      const db = await Database.load("sqlite:memoir.db");
+      const query = `UPDATE entries
+                     SET title = $1,
+                         content = $2
+                     WHERE id = $3`;
+      await db.execute(query, [
+        editableEntry.title,
+        editableEntry.content,
+        editableEntry.id,
+      ]);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      console.log("updateDatabase() has been executed");
+    }
+  }
+
+  function saveEntry() {
+    setEntries((prevEntries) =>
+      prevEntries.map((entry) => {
+        if (entry.id === editableEntry.id) {
+          return {
+            ...entry,
+            title: editableEntry.title,
+            content: editableEntry.content,
+          };
+        } else {
+          return entry;
+        }
+      }),
+    );
+    updateDatabase();
+    console.log("Test");
+  }
 
   useEffect(() => {
     setEditableEntry(selectedEntry);
@@ -28,23 +65,10 @@ export default function Editor() {
     isEditing && textareaRef.current.focus();
   }, [isEditing]);
 
-  function saveEntry() {
-    setEntries(
-      entries.map((entry) =>
-        entry.id === editableEntry.id
-          ? { ...entry, title: editableEntry.title, content: editableEntry.content }
-          : entry,
-      ),
-    );
-  }
-
   return (
     <div className="flex-1 flex flex-col min-h-0 py-2 px-4">
       <div className="py-2 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <Button size="icon" variant="ghost">
-            <ChevronLeft />
-          </Button>
           <p className="text-muted-foreground">
             {dayjs(editableEntry?.date).format("dddd, DD MMMM YYYY")}
           </p>
@@ -66,7 +90,10 @@ export default function Editor() {
           className="text-2xl font-semibold outline-none bg-transparent"
           value={editableEntry?.title}
           onChange={(e) => {
-            setEditableEntry((prevEntry) => ({ ...prevEntry, title: e.target.value }));
+            setEditableEntry((prevEntry) => ({
+              ...prevEntry,
+              title: e.target.value,
+            }));
           }}
           disabled={!isEditing}
         />
@@ -77,7 +104,10 @@ export default function Editor() {
           className="w-full flex-1 min-h-0 resize-none outline-none bg-transparent"
           value={editableEntry?.content}
           onChange={(e) =>
-            setEditableEntry((prevEntry) => ({ ...prevEntry, content: e.target.value }))
+            setEditableEntry((prevEntry) => ({
+              ...prevEntry,
+              content: e.target.value,
+            }))
           }
           disabled={!isEditing}
         ></textarea>
