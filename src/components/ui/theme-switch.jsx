@@ -5,7 +5,7 @@ import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 
 function ThemeSwitch({ className, size = "default", ...props }) {
-  const { theme, setTheme } = useTheme();
+  const { theme } = useTheme();
   return (
     <SwitchPrimitive.Root
       data-slot="switch"
@@ -18,7 +18,7 @@ function ThemeSwitch({ className, size = "default", ...props }) {
     >
       <SwitchPrimitive.Thumb
         data-slot="switch-thumb"
-        className="flex items-center pointer-events-none block rounded-full bg-background shadow-sm ring-0 transition-transform not-dark:bg-clip-padding group-data-[size=default]/switch:h-6 group-data-[size=default]/switch:w-6 group-data-[size=sm]/switch:h-3 group-data-[size=sm]/switch:w-4 data-checked:translate-x-[calc(106%)] dark:data-checked:bg-primary-foreground data-unchecked:translate-x-0.5 dark:data-unchecked:bg-foreground"
+        className="flex items-center pointer-events-none rounded-full bg-background shadow-sm ring-0 transition-transform not-dark:bg-clip-padding group-data-[size=default]/switch:h-6 group-data-[size=default]/switch:w-6 group-data-[size=sm]/switch:h-3 group-data-[size=sm]/switch:w-4 data-checked:translate-x-[calc(106%)] dark:data-checked:bg-primary-foreground data-unchecked:translate-x-0.5 dark:data-unchecked:bg-foreground"
       >
         {theme === "light" ? (
           <Sun className="h-4 text-primary-foreground not-dark:text-primary" />

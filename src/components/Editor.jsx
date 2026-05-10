@@ -1,7 +1,7 @@
 import { useSelectedEntry } from "@/stores/selected-entry";
 import { Separator } from "./ui/separator";
 import { Button } from "./ui/button";
-import { CheckIcon, ChevronLeft, PencilIcon } from "lucide-react";
+import { CheckIcon, PencilIcon } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { useEntries } from "@/stores/entries";
 import dayjs from "dayjs";
@@ -29,9 +29,7 @@ export default function Editor() {
         editableEntry.id,
       ]);
     } catch (error) {
-      console.log(error);
-    } finally {
-      console.log("updateDatabase() has been executed");
+      console.error(error);
     }
   }
 
@@ -50,18 +48,12 @@ export default function Editor() {
       }),
     );
     updateDatabase();
-    console.log("Test");
   }
 
   useEffect(() => {
     setEditableEntry(selectedEntry);
     setIsEditing(false);
   }, [selectedEntry]);
-
-  useEffect(() => {
-    console.log("Active Entry", editableEntry);
-  }, [editableEntry]);
-
   useEffect(() => {
     isEditing && textareaRef.current.focus();
   }, [isEditing]);

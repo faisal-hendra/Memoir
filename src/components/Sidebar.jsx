@@ -1,21 +1,24 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "./ui/button";
 import { PlusIcon, SearchIcon, TrashIcon, X } from "lucide-react";
+import { Settings as SettingsIcon } from "lucide-react";
 import { useSelectedEntry } from "@/stores/selected-entry";
 import { useEntries } from "@/stores/entries";
 import { Input } from "./ui/input";
-import { useTheme } from "next-themes";
-import { ThemeSwitch } from "./ui/theme-switch";
+import Settings from "./Settings";
 import Database from "@tauri-apps/plugin-sql";
+import { useSidebarWidth } from "@/stores/sidebar-width";
 
-const MIN_WIDTH = 200;
-const MAX_WIDTH = 500;
-const DEFAULT_WIDTH = 250;
+const SIDEBAR_MIN_WIDTH = 200;
+const SIDEBAR_MAX_WIDTH = 500;
 
 export default function Sidebar({ createAndSelectNewEntry }) {
-  const { theme, setTheme } = useTheme();
+  const STORED_SIDEBAR_WIDTH = useSidebarWidth((state) => state.sidebarWidth);
+  const setStoredSidebarWidth = useSidebarWidth(
+    (state) => state.setSidebarWidth,
+  );
 
-  const [width, setWidth] = useState(DEFAULT_WIDTH);
+  const [width, setWidth] = useState(STORED_SIDEBAR_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef(null);
 
@@ -79,8 +82,16 @@ export default function Sidebar({ createAndSelectNewEntry }) {
     if (!isResizing) return;
     const handleMouseMove = (e) => {
       if (!sidebarRef.current) return;
-      const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, e.clientX));
+      const newWidth = Math.min(
+        SIDEBAR_MAX_WIDTH,
+        Math.max(SIDEBAR_MIN_WIDTH, e.clientX),
+      );
       setWidth(newWidth);
+      // Only update store after user has finished resizing the sidebar
+      const updateStore = setTimeout(() => {
+        setStoredSidebarWidth(newWidth);
+      }, 1000);
+      updateStore();
     };
     const handleMouseUp = () => {
       setIsResizing(false);
@@ -110,7 +121,6 @@ export default function Sidebar({ createAndSelectNewEntry }) {
           const entriesAfterDeletion = prevEntries.filter(
             (entry) => entry.id !== entryId,
           );
-          console.log(entriesAfterDeletion);
           if (
             entryId === selectedEntry?.id ||
             entriesAfterDeletion.length === 0
@@ -119,7 +129,6 @@ export default function Sidebar({ createAndSelectNewEntry }) {
               ? setSelectedEntry(findVacant())
               : createAndSelectNewEntry();
           }
-          console.log("handleDeleteEntry() Executed!");
           return entriesAfterDeletion;
         });
       }
@@ -202,10 +211,11 @@ export default function Sidebar({ createAndSelectNewEntry }) {
         ))}
       </div>
       <div className="absolute bottom-2 left-2 opacity-10 hover:opacity-100 transition-all">
-        <ThemeSwitch
-          onCheckedChange={() => setTheme(theme === "dark" ? "light" : "dark")}
-          checked={theme === "light"}
-        ></ThemeSwitch>
+        <Settings>
+          <Button variant="ghost">
+            <SettingsIcon />
+          </Button>
+        </Settings>
       </div>
       <button
         type="button"

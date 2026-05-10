@@ -49,7 +49,6 @@ function App() {
     const newEntry = createEmptyEntry();
     const query = `INSERT INTO entries (id, date, title, content)
                    VALUES ($1, $2, $3, $4)`;
-    console.log("createAndSelectNewEntry() Executed!");
     try {
       setError("");
       await db.execute(query, [
