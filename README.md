@@ -1,5 +1,7 @@
 # Memoir
 
+<img height="500" alt="Screenshot 2026-05-15 at 22 25 03" src="https://github.com/user-attachments/assets/f4ee7ac8-f10f-4501-aa14-0c2130567afc" />
+
 A simple note-taking and diary application, built for fun as a personal side project. Might expand it to be a fully functional application (markdown, calendar, etc).
 
 **Still a work in progress.**
