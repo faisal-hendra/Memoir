@@ -9,29 +9,28 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import Database from "@tauri-apps/plugin-sql";
 
 function App() {
-  const entries = useEntries((state) => state.entries);
   const setEntries = useEntries((state) => state.setEntries);
   const setSelectedEntry = useSelectedEntry((state) => state.setSelectedEntry);
   const [error, setError] = useState("");
   const isInitializing = useRef(false);
 
-  async function getEntriesDB() {
+  async function loadEntries() {
     if (isInitializing.current) return;
     isInitializing.current = true;
 
     try {
       const db = await Database.load("sqlite:memoir.db");
-      const dbEntries = await db.select(
+      const loadedEntries = await db.select(
         "SELECT * FROM entries ORDER BY id DESC",
       );
 
       setError("");
-      setEntries(dbEntries);
+      setEntries(loadedEntries);
 
-      if (dbEntries.length > 0) {
-        selectFirstEntry(dbEntries[0]);
+      if (loadedEntries.length > 0) {
+        setSelectedEntry(loadedEntries[0]);
       } else {
-        await createAndSelectNewEntry(db);
+        await createAndSelectNewEntry();
       }
     } catch (error) {
       console.error("Failed to get entries:", error);
@@ -39,9 +38,8 @@ function App() {
     }
   }
 
-  // Initialize, fetch existing entries
   useEffect(() => {
-    getEntriesDB();
+    loadEntries();
   }, []);
 
   async function createAndSelectNewEntry() {
@@ -64,10 +62,6 @@ function App() {
       setEntries((prev) => [newEntry, ...prev]);
       setSelectedEntry(newEntry);
     }
-  }
-
-  function selectFirstEntry(firstEntry) {
-    setSelectedEntry(firstEntry);
   }
 
   return (

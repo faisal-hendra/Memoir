@@ -8,17 +8,14 @@ import { Input } from "./ui/input";
 import Settings from "./Settings";
 import Database from "@tauri-apps/plugin-sql";
 import { useSidebarWidth } from "@/stores/sidebar-width";
-
-const SIDEBAR_MIN_WIDTH = 200;
-const SIDEBAR_MAX_WIDTH = 500;
+import { SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "@/const/sidebar";
 
 export default function Sidebar({ createAndSelectNewEntry }) {
-  const STORED_SIDEBAR_WIDTH = useSidebarWidth((state) => state.sidebarWidth);
-  const setStoredSidebarWidth = useSidebarWidth(
+  const savedSidebarWidth = useSidebarWidth((state) => state.sidebarWidth);
+  const setSavedSidebarWidth = useSidebarWidth(
     (state) => state.setSidebarWidth,
   );
-
-  const [width, setWidth] = useState(STORED_SIDEBAR_WIDTH);
+  const [width, setWidth] = useState(savedSidebarWidth);
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef(null);
 
@@ -36,17 +33,16 @@ export default function Sidebar({ createAndSelectNewEntry }) {
     setIsResizing(true);
   }, []);
 
-  // Finds an empty "Untitled" entry that can be reused
-  function findVacant() {
-    const availableEmptyEntry = entries.find(
+  function findUntitledEntry() {
+    return entries.find(
       (e) => e.title === "Untitled" && e.content.trim() === "",
     );
-    return availableEmptyEntry;
   }
 
   function handleNewEntry() {
-    if (findVacant()) {
-      setSelectedEntry(findVacant());
+    const emptyEntry = findUntitledEntry();
+    if (emptyEntry) {
+      setSelectedEntry(emptyEntry);
     } else {
       createAndSelectNewEntry();
     }
@@ -87,11 +83,10 @@ export default function Sidebar({ createAndSelectNewEntry }) {
         Math.max(SIDEBAR_MIN_WIDTH, e.clientX),
       );
       setWidth(newWidth);
-      // Only update store after user has finished resizing the sidebar
-      const updateStore = setTimeout(() => {
-        setStoredSidebarWidth(newWidth);
-      }, 1000);
-      updateStore();
+      clearTimeout(window.sidebarResizeTimer);
+      window.sidebarResizeTimer = setTimeout(() => {
+        setSavedSidebarWidth(newWidth);
+      }, 500);
     };
     const handleMouseUp = () => {
       setIsResizing(false);
@@ -105,33 +100,31 @@ export default function Sidebar({ createAndSelectNewEntry }) {
   }, [isResizing]);
 
   async function handleDeleteEntry(entryId) {
-    const vacantEntry = findVacant();
-    // Prevents deleting if the entry being deleted is the vacant entry AND it's currently selected
-    if (selectedEntry.id === vacantEntry?.id && entryId === vacantEntry?.id) {
+    const emptyEntry = findUntitledEntry();
+    if (selectedEntry.id === emptyEntry?.id && entryId === emptyEntry?.id) {
       return null;
-    } else {
-      try {
-        const db = await Database.load("sqlite:memoir.db");
-        await db.execute("DELETE FROM entries WHERE id = ?", [entryId]);
-      } catch (error) {
-        console.error("ERROR DELETING AN ENTRY", error);
-        throw error;
-      } finally {
-        setEntries((prevEntries) => {
-          const entriesAfterDeletion = prevEntries.filter(
-            (entry) => entry.id !== entryId,
-          );
-          if (
-            entryId === selectedEntry?.id ||
-            entriesAfterDeletion.length === 0
-          ) {
-            findVacant()
-              ? setSelectedEntry(findVacant())
-              : createAndSelectNewEntry();
+    }
+    try {
+      const db = await Database.load("sqlite:memoir.db");
+      await db.execute("DELETE FROM entries WHERE id = ?", [entryId]);
+    } catch (error) {
+      console.error("ERROR DELETING AN ENTRY", error);
+      throw error;
+    } finally {
+      setEntries((prevEntries) => {
+        const remainingEntries = prevEntries.filter(
+          (entry) => entry.id !== entryId,
+        );
+        if (entryId === selectedEntry?.id || remainingEntries.length === 0) {
+          const nextEntry = findUntitledEntry();
+          if (nextEntry) {
+            setSelectedEntry(nextEntry);
+          } else {
+            createAndSelectNewEntry();
           }
-          return entriesAfterDeletion;
-        });
-      }
+        }
+        return remainingEntries;
+      });
     }
   }
 
@@ -224,7 +217,7 @@ export default function Sidebar({ createAndSelectNewEntry }) {
         className="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-primary/10 active:bg-primary/30 transition-colors"
       />
       {isSearchOpen && filteredEntries.length === 0 && (
-        <div className="text-center pt-2 text-muted-foreground">
+        <div className="text-center pt-2 text-muted-foreground text-sm">
           <p>No result found</p>
         </div>
       )}

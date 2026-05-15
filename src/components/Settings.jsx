@@ -29,11 +29,12 @@ export default function Settings({ children }) {
           <CardContent className="flex gap-2">
             <CardDescription>
               Change the appearance of the application between{" "}
-              <span className={theme === "light" && "font-semibold"}>
+              <span className={theme === "light" && "font-extrabold"}>
                 Light{" "}
               </span>
               or{" "}
-              <span className={theme === "dark" && "font-semibold"}>Dark</span>.
+              <span className={theme === "dark" && "font-extrabold"}>Dark</span>
+              .
             </CardDescription>
             <div>
               <ThemeSwitch
