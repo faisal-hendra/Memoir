@@ -9,6 +9,7 @@ import Settings from "./Settings";
 import Database from "@tauri-apps/plugin-sql";
 import { useSidebarWidth } from "@/stores/sidebar-width";
 import { SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "@/const/sidebar";
+import { useHotkeys } from "react-hotkeys-hook";
 
 export default function Sidebar({ createAndSelectNewEntry }) {
   const savedSidebarWidth = useSidebarWidth((state) => state.sidebarWidth);
@@ -27,6 +28,42 @@ export default function Sidebar({ createAndSelectNewEntry }) {
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+
+  const searchbarRef = useRef(null);
+
+  useHotkeys(
+    "esc",
+    () => {
+      if (isSearchOpen) {
+        setIsSearchOpen((prev) => !prev);
+        setSearchTerm("");
+      }
+    },
+    { enableOnFormTags: true },
+  );
+
+  useHotkeys("ctrl+n, meta+n", () => {
+    handleNewEntry();
+  });
+
+  useHotkeys("ctrl+f, meta+f", () => {
+    setIsSearchOpen(true);
+  });
+
+  useHotkeys("down", () => {
+    const arrayLength = filteredEntries.length;
+    const index = getMatchedIndex();
+    if (index !== arrayLength - 1) {
+      setSelectedEntry(filteredEntries[index + 1]);
+    }
+  });
+
+  useHotkeys("up", () => {
+    const index = getMatchedIndex();
+    if (index !== 0) {
+      setSelectedEntry(filteredEntries[index - 1]);
+    }
+  });
 
   const startResizing = useCallback((e) => {
     e.preventDefault();
@@ -64,6 +101,19 @@ export default function Sidebar({ createAndSelectNewEntry }) {
       setFilteredEntries(entries);
     }
   }
+
+  function getMatchedIndex() {
+    const matchedIndex = filteredEntries.findIndex(
+      (e) => e.id === selectedEntry.id,
+    );
+    return matchedIndex;
+  }
+
+  useEffect(() => {
+    if (isSearchOpen && searchbarRef.current) {
+      searchbarRef.current.focus();
+    }
+  }, [isSearchOpen]);
 
   useEffect(() => {
     setFilteredEntries(entries);
@@ -161,6 +211,7 @@ export default function Sidebar({ createAndSelectNewEntry }) {
         ) : (
           <div className="flex justify-center gap-2">
             <Input
+              ref={searchbarRef}
               onChange={(e) => setSearchTerm(e.target.value)}
               value={searchTerm}
               className="outline-0"
